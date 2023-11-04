@@ -2,13 +2,13 @@ import pickle
 import socket
 import threading
 
-from notebook.notebook import DistributedNotebook
+from notebook.file_system import DistributedFileSystem
 
 RECV_BUFFER = 1024
 
-class NotebookClient():
+class FileSystemClient():
     """
-    NotebookClient handles syncing with remote peers to implement asynchronous
+    FileSystemClient handles syncing with remote peers to implement asynchronous
     collaboration.
     """
 
@@ -25,7 +25,8 @@ class NotebookClient():
                 raise ValueError("Invalid peer format: {}".format(peer))
         self.name = name
         self.hostname = hostname
-        self.notebook = DistributedNotebook(id=name+":"+str(port))
+        # self.notebook = DistributedNotebook(id=name+":"+str(port))
+        self.fileSystem = DistributedFileSystem(id=name+":"+str(port))
         # The client listens and responds to sync messages on another thread.
         # Therefore, notebook accesses are critical sections and must be protected by a
         # lock to prevent concurrent access.
@@ -91,8 +92,8 @@ class NotebookClient():
                         remote = pickle.loads(data)
 
                         with self.lock:
-                            self.notebook.merge(remote)
-                            self.send_bytes(conn, pickle.dumps(self.notebook))
+                            self.fileSystem.merge(remote)
+                            self.send_bytes(conn, pickle.dumps(self.fileSystem))
                         self.editor.render()
 
     def sync(self, peer):
@@ -103,39 +104,53 @@ class NotebookClient():
             s.connect(self.peers[peer])
 
             with self.lock:
-                self.send_bytes(s, pickle.dumps(self.notebook))
+                self.send_bytes(s, pickle.dumps(self.fileSystem))
 
             data = self.recv_bytes(s)
             remote = pickle.loads(data)
             
             with self.lock:
-                self.notebook.merge(remote)
+                self.fileSystem.merge(remote)
 
-    def create_cell(self, index=None):
+    def create_file(self, filename=None):
         """
-        Creates a new cell at the given index. If the index is not specified, the cell
-        is appended to the end of the notebook.
+        Creates a new file with the given name. Appends it to the end of the fileSystem.
         """
         with self.lock:
-            self.notebook.create_cell(index)
+            self.fileSystem.create_file(filename)
 
-    def update_cell(self, index, text):
+    def create_cell(self, filename=None, index=None):
         """
-        Updates the text in a cell with new text.
+        Creates a new cell at the given index of the file. If the index is not specified, 
+        the cell is appended to the end of the file.
         """
         with self.lock:
-            self.notebook.update_cell(index, text)
+            self.fileSystem.create_filecell(filename, index)
 
-    def remove_cell(self, index):
+    def update_cell(self, filename, index, text):
         """
-        Removes the cell at the given index.
+        Updates the cell text at given index with new text in the given file.
         """
         with self.lock:
-            self.notebook.remove_cell(index)
+            self.fileSystem.update_filecell(filename, index, text)
 
-    def get_cell_data(self):
+    def remove_cell(self, filename, index):
         """
-        Returns all the cell data in the notebook.
+        Removes the cell at the given index from the given file.
         """
         with self.lock:
-            return self.notebook.get_cell_data()
+            self.fileSystem.remove_filecell(filename, index)
+
+    def get_file_data(self):
+        """
+        Returns all the file names from the whole File system.
+        """
+        with self.lock:
+            return self.fileSystem.get_filename_data()
+
+    def get_cell_data(self, filename):
+        """
+        Returns all the cell data from the given file.
+        """
+        with self.lock:
+            return self.fileSystem.get_filecell_data(filename)
