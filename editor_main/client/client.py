@@ -1,3 +1,5 @@
+import time
+import random
 import pickle
 import socket
 import threading
@@ -15,11 +17,14 @@ class FileSystemClient():
     def __init__(self, port, peers, name="alice", hostname="localhost"):
         self.port = int(port)
         self.peers = {}
+        self.peers_last_sync = {}
         for peer in peers:
             peer_parts = peer.split(":")
             if len(peer_parts) == 2:
                 self.peers[peer_parts[0]] = ("localhost", int(peer_parts[1]))
+                self.peers_last_sync[peer_parts[0]] = time.time()
             elif len(peer_parts) == 3:
+                self.peers_last_sync[peer_parts[0]] = time.time()
                 self.peers[peer_parts[0]] = (peer_parts[1], int(peer_parts[2]))
             else:
                 raise ValueError("Invalid peer format: {}".format(peer))
@@ -54,13 +59,28 @@ class FileSystemClient():
         Returns the list of peer names.
         """
         return list(self.peers.keys())
-    
+        
+    def auto_sync(self):
+        
+        last_synced_time = time.time()
+        random_sync_interval = 10 + 5 *random.random() 
+        while True:
+            if time.time() - last_synced_time < random_sync_interval or not self.connected:
+                continue
+            for peer in self.get_peers():
+                self.sync(peer)
+            last_synced_time = time.time()
+            random_sync_interval = 10 + 5 * random.random()
+
     def host(self):
         """
         Starts a listener thread to receive sync messages from remote peers.
         """
         listen = threading.Thread(target=self.listen, args=(self.port,))
         listen.start()
+        
+        sync = threading.Thread(target=self.auto_sync)
+        sync.start()
 
     def send_bytes(self, sock, data):
         """
@@ -97,11 +117,19 @@ class FileSystemClient():
                     if not self.connected:
                         break
                 conn, addr = s.accept()
+                print(addr)
                 with conn:
                     while True:
                         with self.lock:
                             if not self.connected:
                                 break
+                        data = self.recv_bytes(conn)
+                        if not data:
+                            break
+                        peer_name = pickle.loads(data)
+                        print(f"Recieving Data from {peer_name}")
+                        self.send_bytes(conn, pickle.dumps('ack'))
+                        
                         data = self.recv_bytes(conn)
                         if not data:
                             break
@@ -126,6 +154,9 @@ class FileSystemClient():
                 s.connect(self.peers[peer])
 
                 with self.lock:
+                    self.send_bytes(s, pickle.dumps(self.name))
+                    data = self.recv_bytes(s)
+                    assert pickle.loads(data) == 'ack' 
                     self.send_bytes(s, pickle.dumps(self.fileSystem))
 
                 data = self.recv_bytes(s)
