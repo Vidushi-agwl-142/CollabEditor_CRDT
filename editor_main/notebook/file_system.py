@@ -53,7 +53,7 @@ class DistributedFileSystem(Sequence):
         """
         for file in self.get():
             if file.get_cell_data()[0] == filename:
-                file.remove(index+1)
+                file.remove_cell(index+1)
 
     def remove_file(self, filename):
         """
