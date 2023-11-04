@@ -10,7 +10,7 @@ class FileSystemEditor():
         self.root = tk.Tk()
         self.root.title(client.name)
         self.client = client
-        self.curr_file = ""
+        self.curr_file = None
         self.files = []
         self.heading = None
         # self.notebooks = {}
