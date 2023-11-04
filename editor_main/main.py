@@ -2,7 +2,7 @@ import sys
 import argparse
 from tkinter.ttk import Notebook
 
-from client.client import NotebookClient
+from client.client import FileSystemClient
 from ui.editor import FileSystemEditor
 
 def start_notebook(listen, peers, name):
@@ -13,7 +13,7 @@ def start_notebook(listen, peers, name):
     elif len(host_parts) == 2:
         hostname = host_parts[0]
         port = int(host_parts[1])
-    client = NotebookClient(port, peers, name=name, hostname=hostname)
+    client = FileSystemClient(port, peers, name=name, hostname=hostname)
     client.host()
     editor = FileSystemEditor(client=client)
     editor.start()
