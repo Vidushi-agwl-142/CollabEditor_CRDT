@@ -173,6 +173,13 @@ class FileSystemClient():
         """
         with self.lock:
             self.fileSystem.create_file(filename)
+        
+    def remove_file(self, filename=None):
+        """
+        Deletes the file with the given filename from the filesystem.
+        """
+        with self.lock:
+            self.fileSystem.remove_file(filename)
 
     def create_cell(self, filename=None, index=None):
         """
