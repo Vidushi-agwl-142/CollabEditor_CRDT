@@ -32,6 +32,16 @@ class FileSystemClient():
         # lock to prevent concurrent access.
         self.lock = threading.Lock()
         self.editor = None
+        self.connected = False
+
+    def toggle_connection(self):
+        with self.lock:
+            self.connected = not self.connected
+        print(f"State of {self.name} changed to {self.connected}")
+        if self.connected:
+            listen = threading.Thread(target=self.listen, args=(self.port,))
+            listen.start()
+            
 
     def attach_editor(self, editor):
         """
@@ -83,9 +93,15 @@ class FileSystemClient():
             s.listen()
             print("Listening on port {}".format(port))
             while True:
+                with self.lock:
+                    if not self.connected:
+                        break
                 conn, addr = s.accept()
                 with conn:
                     while True:
+                        with self.lock:
+                            if not self.connected:
+                                break
                         data = self.recv_bytes(conn)
                         if not data:
                             break
@@ -95,22 +111,30 @@ class FileSystemClient():
                             self.fileSystem.merge(remote)
                             self.send_bytes(conn, pickle.dumps(self.fileSystem))
                         self.editor.render()
+        print('Disconnected Closing Socket ...')
 
     def sync(self, peer):
         """
         Sends a sync message to a remote peer.
         """
+        if not self.connected:
+            print(f"{self.name} is Disconnected, Cannot Sync !")
+            return
+
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.connect(self.peers[peer])
+            try:
+                s.connect(self.peers[peer])
 
-            with self.lock:
-                self.send_bytes(s, pickle.dumps(self.fileSystem))
+                with self.lock:
+                    self.send_bytes(s, pickle.dumps(self.fileSystem))
 
-            data = self.recv_bytes(s)
-            remote = pickle.loads(data)
-            
-            with self.lock:
-                self.fileSystem.merge(remote)
+                data = self.recv_bytes(s)
+                remote = pickle.loads(data)
+                
+                with self.lock:
+                    self.fileSystem.merge(remote)
+            except ConnectionRefusedError:
+                print(f"{peer} refused connection from {self.name}")
 
     def create_file(self, filename=None):
         """

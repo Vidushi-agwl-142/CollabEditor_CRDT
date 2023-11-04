@@ -1,8 +1,14 @@
 import tkinter as tk
 
+TOP_ROW_HEIGHT = 2
+SMALL_BUTTON_HEIGHT = 1
+SMALL_BUTTON_WIDTH = 1
+NORMAL_BUTTON_WIDTH = 2
+
 class FileSystemEditor():
     def __init__(self, client) -> None:
         self.root = tk.Tk()
+        self.root.title(client.name)
         self.client = client
         self.curr_file = ""
         self.files = []
@@ -10,10 +16,12 @@ class FileSystemEditor():
         self.notebook = []
         self.file_index = 0
         if self.client is not None:
-            Files = tk.Label(self.root, text="Files", width=10, height=5)
-            Add = tk.Button(self.root, text="+", command= lambda: self.add_name(), width=10, height=5)
-            Refresh = tk.Button(self.root, text="Refresh", command= lambda: self.refresh(), width=10, height=5)
-            Connect = tk.Button(self.root, text="Connect", command= lambda: self.connect(), width=10, height=5)
+            Files = tk.Label(self.root, text="Files", width=5, height=TOP_ROW_HEIGHT)
+            Add = tk.Button(self.root, text="+", command= lambda: self.add_name(), width=SMALL_BUTTON_WIDTH, height=SMALL_BUTTON_HEIGHT)
+            Refresh = tk.Button(self.root, text="Refresh", command= lambda: self.refresh(), width=5, height=TOP_ROW_HEIGHT)
+            Connect = tk.Button(self.root, text="Connect", command= lambda: self.connect(), width=5, height=TOP_ROW_HEIGHT)
+            self.connect_widget = Connect
+            self.disconnect_widget = None
             Files.grid(row = 0, column = 0)
             Add.grid(row = 0, column = 1)
             Refresh.grid(row = 0, column = 7)
@@ -22,11 +30,23 @@ class FileSystemEditor():
         
     def disconnect(self):
         # self.client.disconnect()
-        Connect = tk.Button(self.root, text="Connect", command= lambda: self.connect(), width=10, height=5)
+        print('Disconnected Clicked ... ')
+        self.disconnect_widget.destroy()
+        self.disconnect_widget = None
+        self.client.toggle_connection()
+        Connect = tk.Button(self.root, text="Connect", command= lambda: self.connect(), width=10, height=TOP_ROW_HEIGHT)
+        self.connect_widget = Connect
+        Connect.grid(row=0, column=6)
     
     def connect(self):
         # self.client.connect()
-        Disconnect = tk.Button(self.root, text="Disconnect", command= lambda: self.disconnect(), width=10, height=5)
+        print('Connected Clicked')
+        self.client.toggle_connection()
+        self.connect_widget.destroy()
+        self.connect_widget = None
+        Disconnect = tk.Button(self.root, text="Disconnect", command= lambda: self.disconnect(), width=10, height=TOP_ROW_HEIGHT)
+        Disconnect.grid(row=0, column=6)
+        self.disconnect_widget = Disconnect
 
     def refresh(self):
         for peer in self.client.get_peers():
@@ -35,7 +55,7 @@ class FileSystemEditor():
     
     def add_name(self):
         file_name = tk.Entry(self.root, width=10)
-        submit = tk.Button(self.root, text="submit", command=lambda: self.add_file(submit, file_name), width=10, height=5)
+        submit = tk.Button(self.root, text="submit", command=lambda: self.add_file(submit, file_name), width=5, height=2)
         file_name.grid(row=self.file_index+1, column = 0)
         submit.grid(row=self.file_index+1, column = 1)
 
@@ -52,7 +72,7 @@ class FileSystemEditor():
         file = tk.Label(self.root, text=self.curr_file, width=10, height=5)
         file.grid(row= 0, column = 2)
         submit.destroy()
-        delete = tk.Button(self.root, text="Delete", width=10, height=5)
+        delete = tk.Button(self.root, text="X", width=SMALL_BUTTON_WIDTH, height=SMALL_BUTTON_HEIGHT)
         delete.grid(row=self.file_index, column = 1)
         file_name.destroy()
         new_file = tk.Button(self.root, text=name, command= lambda: self.open_file(name), width=10, height=5)
@@ -63,7 +83,7 @@ class FileSystemEditor():
 
     def open_file(self, filename):
         self.curr_file = filename
-        file = tk.Label(self.root, text=self.curr_file, width=10, height=5)
+        file = tk.Label(self.root, text=self.curr_file, width=5, height=2)
         file.grid(row= 0, column = 2)
         self.render()
 
@@ -91,18 +111,18 @@ class FileSystemEditor():
         cell = tk.Frame(self.root)
 
         # Button to remove the cell
-        remove = tk.Button(cell, text="X", command=lambda: self.remove_cell(cell), width=10, height=5)
-        remove.grid(row=6*depth+1, column=7)
+        remove = tk.Button(cell, text="X", command=lambda: self.remove_cell(cell), width=SMALL_BUTTON_WIDTH, height=SMALL_BUTTON_HEIGHT)
+        remove.grid(row=5*depth+1, column=7)
         
         # Text editor widget
         text = tk.Text(cell, wrap="char", highlightbackground="gray")
-        text.grid(row=6*depth+1, column=2, columnspan = 5, rowspan = 5)
+        text.grid(row=5*depth+1, column=2, columnspan = 5, rowspan = 5)
         text.insert("end", initial_text)
         text.bind("<KeyRelease>", self.edit_cell_callback)
         # text.pack(side="bottom")
         
         # Button to insert a new cell
-        add = tk.Button(cell, text="+", command=lambda: self.add_cell(cell), width=10, height=5)
+        add = tk.Button(cell, text="+", command=lambda: self.add_cell(cell), width=SMALL_BUTTON_WIDTH, height=SMALL_BUTTON_HEIGHT)
         add.grid(row=6*depth+6, column=7)
         return cell
 
@@ -144,9 +164,9 @@ class FileSystemEditor():
             for filename in file_data:
                 # print(filename)
                 self.file_index+=1
-                new_file = tk.Button(self.root, text=str(filename), command= lambda f=filename: self.open_file(f), width=10, height=5)
+                new_file = tk.Button(self.root, text=str(filename), command= lambda f=filename: self.open_file(f), width=10, height=SMALL_BUTTON_HEIGHT)
                 new_file.grid(row=self.file_index, column = 0)
-                delete = tk.Button(self.root, text="Delete", width=10, height=5)
+                delete = tk.Button(self.root, text="X", width=SMALL_BUTTON_WIDTH, height=SMALL_BUTTON_HEIGHT)
                 delete.grid(row=self.file_index, column = 1)
                 self.files.append(new_file)
             
@@ -156,13 +176,14 @@ class FileSystemEditor():
             cell_data = self.client.get_cell_data(self.curr_file)
             # print(self.curr_file)
             # print(cell_data)
-            index = 0
-            for text in cell_data:
-                cell = self.create_cell_frame(initial_text=text, depth=index)
-                cell.grid(row=6*index+1, column=2, rowspan=5, columnspan=5)
-                # cell.pack(side="top", fill="both", expand=True)
-                self.notebook.append(cell)
-                index+=1
+            if cell_data is not None:
+                index = 0
+                for text in cell_data:
+                    cell = self.create_cell_frame(initial_text=text, depth=index)
+                    cell.grid(row=6*index+1, column=2, rowspan=5, columnspan=5)
+                    # cell.pack(side="top", fill="both", expand=True)
+                    self.notebook.append(cell)
+                    index+=1
         else:
             for cell in self.notebook:
                 cell.pack_forget()
