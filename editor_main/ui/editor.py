@@ -160,9 +160,9 @@ class FileSystemEditor():
             # for cell in self.notebook:
             #     cell.destroy()
 
-            # for (file, delete) in self.files:
-            #     file.destroy()
-            #     delete.destroy()
+            for (file, delete) in self.files:
+                file.destroy()
+                delete.destroy()
             
             # if self.heading is not None:
             #     self.heading.destroy()
@@ -183,9 +183,9 @@ class FileSystemEditor():
                 delete.grid(row=self.file_index, column = 1)
                 temp_files.append((new_file, delete))
             
-            for i in range(self.file_index, len(self.files)):
-                self.files[i][0].destroy()
-                self.files[i][1].destroy()
+            # for i in range(self.file_index, len(self.files)):
+            #     self.files[i][0].destroy()
+            #     self.files[i][1].destroy()
             
             self.files = temp_files
             # for file in temp_files:
