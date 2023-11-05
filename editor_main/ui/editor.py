@@ -125,6 +125,7 @@ class FileSystemEditor():
         text.grid(row=5*depth+1, column=2, columnspan = 5, rowspan = 5)
         text.insert("end", initial_text)
         text.bind("<KeyRelease>", self.edit_cell_callback)
+        text.focus_set()
         # text.pack(side="bottom")
         
         # Button to insert a new cell
@@ -155,33 +156,33 @@ class FileSystemEditor():
         """
         if self.client is not None:
             # Delete the current cells
-            for cell in self.notebook:
-                cell.destroy()
+            # for cell in self.notebook:
+            #     cell.destroy()
 
-            for (file, delete) in self.files:
-                file.destroy()
-                delete.destroy()
+            # for (file, delete) in self.files:
+            #     file.destroy()
+            #     delete.destroy()
             
-            if self.heading is not None:
-                self.heading.destroy()
+            # if self.heading is not None:
+            #     self.heading.destroy()
 
-            self.notebook = []
-            self.files = []
-            self.file_index = 0
+            temp_notebook = []
+            temp_files = []
+            temp_file_index = 0
 
             # Recreate all the cells with the client's current state
             file_data = self.client.get_file_data()
 
             for filename in file_data:
                 # print(filename)
-                self.file_index+=1
+                temp_file_index+=1
                 new_file = tk.Button(self.root, text=str(filename), command= lambda f=filename: self.open_file(f), width=10, height=SMALL_BUTTON_HEIGHT)
-                new_file.grid(row=self.file_index, column = 0)
+                new_file.grid(row=temp_file_index, column = 0)
                 delete = tk.Button(self.root, text="X", command= lambda f=filename: self.delete_file(f), width=SMALL_BUTTON_WIDTH, height=SMALL_BUTTON_HEIGHT)
-                delete.grid(row=self.file_index, column = 1)
-                self.files.append((new_file, delete))
+                delete.grid(row=temp_file_index, column = 1)
+                temp_files.append((new_file, delete))
             
-            # for file in self.files:
+            # for file in temp_files:
             #     print(file['text'])
 
             if self.curr_file is not None:
@@ -203,13 +204,17 @@ class FileSystemEditor():
                     cell = self.create_cell_frame(initial_text=text, depth=index)
                     cell.grid(row=6*index+1, column=2, rowspan=5, columnspan=5)
                     # cell.pack(side="top", fill="both", expand=True)
-                    self.notebook.append(cell)
+                    temp_notebook.append(cell)
                     index+=1
         else:
-            for cell in self.notebook:
+            for cell in temp_notebook:
                 cell.pack_forget()
-            for cell in self.notebook:
+            for cell in temp_notebook:
                 cell.pack(side="top", fill="both", expand=True)
+
+        self.notebook = temp_notebook
+        self.files = temp_files
+        self.file_index = temp_file_index
 
     def start(self):
         """

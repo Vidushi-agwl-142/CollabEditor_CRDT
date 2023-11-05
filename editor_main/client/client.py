@@ -63,14 +63,15 @@ class FileSystemClient():
     def auto_sync(self):
         
         last_synced_time = time.time()
-        random_sync_interval = 10 + 5 *random.random() 
+        # random_sync_interval = 10 + 5 *random.random() 
+        random_sync_interval = 1
         while True:
             if time.time() - last_synced_time < random_sync_interval or not self.connected:
                 continue
             for peer in self.get_peers():
                 self.sync(peer)
             last_synced_time = time.time()
-            random_sync_interval = 10 + 5 * random.random()
+            random_sync_interval = 1
 
     def host(self):
         """
@@ -164,6 +165,7 @@ class FileSystemClient():
                 
                 with self.lock:
                     self.fileSystem.merge(remote)
+                self.editor.render()
             except ConnectionRefusedError:
                 print(f"{peer} refused connection from {self.name}")
 
